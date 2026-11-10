@@ -3,7 +3,6 @@ export type PowerAction = "shutdown" | "restart" | "sleep" | "hibernate" | "logo
 export type ShutdownSettings = {
 	countdownSeconds?: number;
 	accentColor?: string;
-	multiTileLayout?: boolean;
 	armed?: boolean;
 	powerAction?: PowerAction;
 };
@@ -15,7 +14,6 @@ export type Role = "master" | "child";
 export const DEFAULTS: NormalizedSettings = {
 	countdownSeconds: 10,
 	accentColor: "#00d37f",
-	multiTileLayout: true,
 	armed: false,
 	powerAction: "shutdown",
 };

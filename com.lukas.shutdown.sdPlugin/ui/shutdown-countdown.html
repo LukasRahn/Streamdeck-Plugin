@@ -3,8 +3,7 @@
 <head>
 	<meta charset="utf-8" />
 	<title>Shutdown Settings</title>
-	<link rel="stylesheet" href="https://sdpi-components.dev/css/sdpi.css" />
-	<script src="https://sdpi-components.dev/js/sdpi-components.js"></script>
+	<script src="sdpi-components.js"></script>
 </head>
 <body>
 	<sdpi-item label="Countdown (sec)">
@@ -12,7 +11,7 @@
 	</sdpi-item>
 
 	<sdpi-item label="Power Action">
-		<sdpi-select setting="powerAction" placeholder="Choose action">
+		<sdpi-select setting="powerAction" default="shutdown">
 			<option value="shutdown">Shutdown</option>
 			<option value="restart">Restart</option>
 			<option value="sleep">Sleep</option>
@@ -25,16 +24,12 @@
 		<sdpi-color setting="accentColor" default="#00d37f"></sdpi-color>
 	</sdpi-item>
 
-	<sdpi-item label="Multi-Tile">
-		<sdpi-checkbox setting="multiTileLayout" default></sdpi-checkbox>
-	</sdpi-item>
-
 	<details>
 		<summary style="color:#9b9b9b;cursor:pointer;margin:8px 10px;">Tips</summary>
 		<div style="padding:4px 10px;color:#7a7a7a;font-size:12px;">
 			<p><strong>Long-press</strong> the Master key to toggle <em>Armed / Preview</em> mode.</p>
 			<p>When <span style="color:#ff3b30;font-weight:bold;">ARMED</span>, the countdown will execute the power action. In <span style="color:#3fa3ff;">PREVIEW</span> mode it only shows the animation.</p>
-			<p>Place <em>Child</em> keys next to the Master for a multi-tile countdown display.</p>
+			<p>Place <em>Child</em> keys next to the Master and the countdown spans all of them.</p>
 		</div>
 	</details>
 </body>
