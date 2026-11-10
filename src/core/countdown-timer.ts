@@ -1,105 +1,46 @@
-export type CountdownState = "idle" | "running" | "cancelled";
+type SecondCallback = () => void;
+type CompleteCallback = () => void;
 
-/**
- * Drives a simple second-based countdown without leaking timers.
- */
+/** How often the clock is checked. Cheap: callbacks only fire on a change. */
+const TICK_MS = 50;
+
+/** Wall-clock countdown, so slow callbacks can never make it drift. */
 export class CountdownTimer {
-	private readonly durationSeconds: number;
-	private state: CountdownState = "idle";
-	private remainingSeconds = 0;
-	private timeout?: NodeJS.Timeout;
+	private interval?: NodeJS.Timeout;
+	private endTime = 0;
+	private lastSecond = -1;
 
-	constructor(durationSeconds: number) {
-		this.durationSeconds = durationSeconds;
+	/** Whole seconds left (rounded up). */
+	get remainingSeconds(): number {
+		return Math.max(0, Math.ceil((this.endTime - Date.now()) / 1000));
 	}
 
-	getState(): CountdownState {
-		return this.state;
-	}
+	/** Returns false if already running. `onSecond` fires immediately, then on every new second. */
+	start(seconds: number, onSecond: SecondCallback, onComplete: CompleteCallback): boolean {
+		if (this.interval) return false;
 
-	getDurationSeconds(): number {
-		return this.durationSeconds;
-	}
+		this.endTime = Date.now() + seconds * 1000;
+		this.lastSecond = -1;
 
-	getRemainingSeconds(): number {
-		return this.remainingSeconds;
-	}
-
-	/**
-	 * Starts the countdown; returns `false` when a countdown is already running.
-	 */
-	start(onTick: (remainingSeconds: number) => Promise<void> | void, onComplete: () => Promise<void> | void): boolean {
-		if (this.state === "running") {
-			return false;
-		}
-
-		this.state = "running";
-		this.remainingSeconds = this.durationSeconds;
-		this.scheduleTick(onTick, onComplete);
-		return true;
-	}
-
-	/**
-	 * Cancels the countdown; resolves `false` if no countdown is running.
-	 */
-	async cancel(onCancel?: () => Promise<void> | void): Promise<boolean> {
-		if (this.state !== "running") {
-			return false;
-		}
-
-		if (this.timeout) {
-			clearTimeout(this.timeout);
-			this.timeout = undefined;
-		}
-
-		this.state = "cancelled";
-		this.remainingSeconds = 0;
-
-		if (onCancel) {
-			await onCancel();
-		}
-
-		this.state = "idle";
-		return true;
-	}
-
-	/**
-	 * Ensures timers are cleaned up when the action disappears.
-	 */
-	dispose(): void {
-		if (this.timeout) {
-			clearTimeout(this.timeout);
-			this.timeout = undefined;
-		}
-		this.remainingSeconds = 0;
-		this.state = "idle";
-	}
-
-	private scheduleTick(onTick: (remainingSeconds: number) => Promise<void> | void, onComplete: () => Promise<void> | void): void {
-		void this.runTick(onTick, onComplete);
-	}
-
-	private async runTick(onTick: (remainingSeconds: number) => Promise<void> | void, onComplete: () => Promise<void> | void): Promise<void> {
-		await onTick(this.remainingSeconds);
-
-		if (this.state !== "running") {
-			return;
-		}
-
-		if (this.remainingSeconds === 0) {
-			this.timeout = undefined;
-			this.state = "idle";
-			await onComplete();
-			return;
-		}
-
-		this.timeout = setTimeout(() => {
-			if (this.state !== "running") {
+		const tick = (): void => {
+			if (Date.now() >= this.endTime) {
+				this.cancel();
+				onComplete();
 				return;
 			}
+			if (this.remainingSeconds !== this.lastSecond) {
+				this.lastSecond = this.remainingSeconds;
+				onSecond();
+			}
+		};
 
-			this.remainingSeconds -= 1;
-			this.scheduleTick(onTick, onComplete);
-		}, 1000);
+		this.interval = setInterval(tick, TICK_MS);
+		tick();
+		return true;
+	}
+
+	cancel(): void {
+		clearInterval(this.interval);
+		this.interval = undefined;
 	}
 }
