@@ -8,21 +8,18 @@
  * The display is purely derived from state: every change just requests a render,
  * and `renderCurrent` draws whatever is true at that moment. Nothing can paint a
  * stale frame over a newer state.
+ *
+ * Settings are plugin-wide (Stream Deck global settings), so every key sees the
+ * same configuration no matter which page or device the master is on.
  */
 import streamDeck from "@elgato/streamdeck";
-import type {
-	KeyAction,
-	WillAppearEvent,
-	WillDisappearEvent,
-	DidReceiveSettingsEvent,
-} from "@elgato/streamdeck";
+import type { KeyAction, WillAppearEvent, WillDisappearEvent } from "@elgato/streamdeck";
 
 import { CountdownTimer } from "./countdown-timer";
 import { KeyRegistry } from "./key-registry";
 import { RenderScheduler } from "./render-scheduler";
 import { SettingsStore } from "./settings-store";
 import { SystemPower } from "./system-power";
-import { POWER_LABELS } from "./types";
 import type { Role, ShutdownSettings } from "./types";
 import { DisplayRenderer } from "../render/renderer";
 import { countdownView, holdView, idleView, messageView, type View } from "../render/svg";
@@ -40,6 +37,9 @@ const FINAL_SECONDS = 3; // the number turns red for these
 const COLOR_ARMED = "#ff3b30";
 const COLOR_PREVIEW = "#3fa3ff";
 const COLOR_CANCEL = "#ffb02e";
+
+/** Key-face text in the Stream Deck language (`<lang>.json` → "Localization"). */
+const t = (key: string): string => streamDeck.i18n.t(key);
 
 export class ShutdownController {
 	private readonly registry = new KeyRegistry();
@@ -63,25 +63,27 @@ export class ShutdownController {
 			() => this.renderCurrent(),
 			(e) => this.log("Render failed", e),
 		);
+		streamDeck.settings.onDidReceiveGlobalSettings<ShutdownSettings>((ev) => this.applySettings(ev.settings));
+	}
+
+	/** Call once connected; the answer arrives through the global-settings listener. */
+	loadSettings(): void {
+		this.safeAsync(() => streamDeck.settings.getGlobalSettings());
 	}
 
 	// ── Lifecycle hooks (called by the action delegates) ───────────────────────
 
-	register(ev: WillAppearEvent<ShutdownSettings>, role: Role): void {
+	register(ev: WillAppearEvent): void {
 		const key = this.toKeyAction(ev.action);
 		if (!key) return;
 
-		this.registry.add(key, role);
+		this.registry.add(key);
 		this.renderer.forget(key.id);
 		key.setTitle("").catch((e) => this.log("setTitle failed", e));
-
-		if (role === "master") this.applyMasterSettings(ev.payload.settings);
-		else this.mirrorToChild(key);
-
 		this.scheduler.request();
 	}
 
-	unregister(ev: WillDisappearEvent<ShutdownSettings>): void {
+	unregister(ev: WillDisappearEvent): void {
 		const key = this.toKeyAction(ev.action);
 		if (!key) return;
 
@@ -94,16 +96,6 @@ export class ShutdownController {
 			this.state = "idle"; // nobody can see or cancel it any more, so nothing may fire
 			return;
 		}
-		this.scheduler.request();
-	}
-
-	handleSettings(ev: DidReceiveSettingsEvent<ShutdownSettings>, role: Role): void {
-		const key = this.toKeyAction(ev.action);
-		if (!key) return;
-
-		if (role === "master") this.applyMasterSettings(ev.payload.settings);
-		else this.mirrorToChild(key);
-
 		this.scheduler.request();
 	}
 
@@ -172,16 +164,18 @@ export class ShutdownController {
 		await this.delay(COMPLETE_HOLD_MS);
 		if (this.state !== "completing") return;
 
-		const { powerAction, armed } = this.settings.current;
-		this.completingLabel = POWER_LABELS[powerAction];
+		const { powerAction, armed, forceClose } = this.settings.current;
+		this.completingLabel = t(powerAction);
 		this.scheduler.request();
 
 		await this.delay(COMPLETE_FLASH_MS);
 		if (this.state !== "completing") return;
 
-		await this.power.perform(powerAction, armed);
+		const ok = await this.power.perform(powerAction, armed, forceClose);
 		this.state = "idle";
 		this.scheduler.request();
+		// Stream Deck's warning triangle: e.g. hibernate disabled or a macOS permission denied.
+		if (!ok) for (const key of this.registry.all()) key.showAlert().catch((e) => this.log("showAlert failed", e));
 	}
 
 	private beginHold(): void {
@@ -207,8 +201,8 @@ export class ShutdownController {
 
 	private toggleArmed(): void {
 		this.state = "idle";
-		this.settings.toggleArmed();
-		this.safeAsync(() => this.propagate());
+		const next = this.settings.toggleArmed();
+		this.safeAsync(() => streamDeck.settings.setGlobalSettings(next));
 		this.scheduler.request();
 	}
 
@@ -225,42 +219,33 @@ export class ShutdownController {
 		switch (this.state) {
 			case "idle": {
 				const color = armed ? COLOR_ARMED : COLOR_PREVIEW;
-				return idleView(powerAction, countdownSeconds, color, armed ? "ARMED" : "PREVIEW");
+				return idleView(powerAction, countdownSeconds, color, armed ? t("armed") : t("preview"));
 			}
 			case "arming": {
 				const targetArmed = !armed;
 				const progress = (Date.now() - this.keyDownTime) / LONG_PRESS_MS;
-				return holdView(progress, targetArmed, targetArmed ? COLOR_ARMED : COLOR_PREVIEW);
+				const sub = targetArmed ? t("arming") : t("disarming");
+				return holdView(progress, t("hold"), sub, targetArmed ? COLOR_ARMED : COLOR_PREVIEW);
 			}
 			case "running": {
 				const seconds = this.timer.remainingSeconds;
 				const color = seconds <= FINAL_SECONDS ? COLOR_ARMED : accentColor;
-				return countdownView(seconds, color, armed ? "ARMED" : undefined, COLOR_ARMED);
+				return countdownView(seconds, color, armed ? t("armed") : undefined, COLOR_ARMED);
 			}
 			case "completing":
 				return this.completingLabel
 					? messageView(this.completingLabel, COLOR_ARMED)
-					: countdownView(0, COLOR_ARMED, armed ? "ARMED" : undefined, COLOR_ARMED);
+					: countdownView(0, COLOR_ARMED, armed ? t("armed") : undefined, COLOR_ARMED);
 			case "cancelling":
-				return messageView("Cancelled", COLOR_CANCEL);
+				return messageView(t("cancelled"), COLOR_CANCEL);
 		}
 	}
 
-	// ── Settings propagation ───────────────────────────────────────────────────
+	// ── Settings ─────────────────────────────────────────────────────────────────
 
-	private applyMasterSettings(raw?: ShutdownSettings): void {
-		this.settings.set(this.settings.normalize(raw));
-		this.safeAsync(() => this.propagate());
-	}
-
-	private mirrorToChild(key: KeyAction): void {
-		key.setSettings(this.settings.current).catch((e) => this.log("setSettings failed", e));
-	}
-
-	private async propagate(): Promise<void> {
-		const master = this.registry.master;
-		if (master) await master.action.setSettings(this.settings.current);
-		await Promise.all(this.registry.children().map((c) => c.action.setSettings(this.settings.current)));
+	private applySettings(raw: ShutdownSettings): void {
+		this.settings.set(raw);
+		this.scheduler.request();
 	}
 
 	// ── Utilities ────────────────────────────────────────────────────────────────
@@ -271,7 +256,7 @@ export class ShutdownController {
 		return typeof candidate.setImage === "function" ? (candidate as KeyAction) : null;
 	}
 
-	private safeAsync(fn: () => Promise<void>): void {
+	private safeAsync(fn: () => Promise<unknown>): void {
 		fn().catch((e) => this.log("Async operation failed", e));
 	}
 

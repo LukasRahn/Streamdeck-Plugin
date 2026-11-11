@@ -2,6 +2,7 @@ import streamDeck from "@elgato/streamdeck";
 
 import { ShutdownChildAction } from "./actions/shutdown-child";
 import { ShutdownMasterAction } from "./actions/shutdown-master";
+import { shutdownController } from "./core/shutdown-controller";
 
 // Capture detailed logging during development; tone down to "info" for production.
 streamDeck.logger.setLevel("info");
@@ -10,5 +11,6 @@ streamDeck.logger.setLevel("info");
 streamDeck.actions.registerAction(new ShutdownMasterAction());
 streamDeck.actions.registerAction(new ShutdownChildAction());
 
-// Finally, connect to the Stream Deck.
-streamDeck.connect();
+// Finally, connect to the Stream Deck, then fetch the plugin-wide settings.
+await streamDeck.connect();
+shutdownController.loadSettings();

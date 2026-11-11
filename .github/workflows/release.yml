@@ -1,0 +1,25 @@
+# Push a tag like v0.3.0 → builds, tests and attaches the .streamDeckPlugin to a GitHub release.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run pack
+      - run: gh release create "$GITHUB_REF_NAME" dist/*.streamDeckPlugin --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}

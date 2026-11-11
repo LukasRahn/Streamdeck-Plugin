@@ -1,0 +1,28 @@
+{
+	"Name": "ShutDown",
+	"Category": "ShutDown",
+	"Description": "Multi-key countdown that shuts down, restarts, sleeps, hibernates, logs off, locks the screen or turns off the display.",
+	"com.lukas.shutdown.master": {
+		"Name": "Shutdown Master",
+		"Tooltip": "Configure the countdown and start it. Hold to switch between Preview and Armed."
+	},
+	"com.lukas.shutdown.child": {
+		"Name": "Shutdown Child",
+		"Tooltip": "Extends the master's countdown across more keys."
+	},
+	"Localization": {
+		"armed": "ARMED",
+		"preview": "PREVIEW",
+		"hold": "HOLD",
+		"arming": "ARMING",
+		"disarming": "DISARMING",
+		"cancelled": "Cancelled",
+		"shutdown": "Shutdown",
+		"restart": "Restart",
+		"sleep": "Sleep",
+		"hibernate": "Hibernate",
+		"logoff": "Log Off",
+		"lock": "Lock",
+		"monitor": "Display Off"
+	}
+}

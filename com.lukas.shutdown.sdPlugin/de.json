@@ -1,0 +1,28 @@
+{
+	"Name": "ShutDown",
+	"Category": "ShutDown",
+	"Description": "Countdown über mehrere Tasten, der herunterfährt, neu startet, in Energie sparen oder Ruhezustand wechselt, abmeldet, den Bildschirm sperrt oder ausschaltet.",
+	"com.lukas.shutdown.master": {
+		"Name": "Shutdown Master",
+		"Tooltip": "Countdown einstellen und starten. Halten wechselt zwischen Vorschau und Scharf."
+	},
+	"com.lukas.shutdown.child": {
+		"Name": "Shutdown Child",
+		"Tooltip": "Erweitert den Countdown des Masters auf weitere Tasten."
+	},
+	"Localization": {
+		"armed": "SCHARF",
+		"preview": "VORSCHAU",
+		"hold": "HALTEN",
+		"arming": "SCHÄRFEN",
+		"disarming": "ENTSCHÄRFEN",
+		"cancelled": "Abgebrochen",
+		"shutdown": "Ausschalten",
+		"restart": "Neustart",
+		"sleep": "Standby",
+		"hibernate": "Ruhezustand",
+		"logoff": "Abmelden",
+		"lock": "Sperren",
+		"monitor": "Monitor aus"
+	}
+}

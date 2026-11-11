@@ -1,13 +1,26 @@
-export type PowerAction = "shutdown" | "restart" | "sleep" | "hibernate" | "logoff";
+export const POWER_ACTIONS = ["shutdown", "restart", "sleep", "hibernate", "logoff", "lock", "monitor"] as const;
 
+export type PowerAction = (typeof POWER_ACTIONS)[number];
+
+/** Raw plugin-wide (global) settings as the property inspector stores them. */
 export type ShutdownSettings = {
-	countdownSeconds?: number;
+	/** Slider value 1–60, in `countdownUnit`. */
+	countdownValue?: number;
+	countdownUnit?: "s" | "m" | "h";
 	accentColor?: string;
 	armed?: boolean;
 	powerAction?: PowerAction;
+	/** Windows only: close apps without asking (unsaved work is lost). */
+	forceClose?: boolean;
 };
 
-export type NormalizedSettings = Required<ShutdownSettings>;
+export type NormalizedSettings = {
+	countdownSeconds: number;
+	accentColor: string;
+	armed: boolean;
+	powerAction: PowerAction;
+	forceClose: boolean;
+};
 
 export type Role = "master" | "child";
 
@@ -16,22 +29,21 @@ export const DEFAULTS: NormalizedSettings = {
 	accentColor: "#00d37f",
 	armed: false,
 	powerAction: "shutdown",
-};
-
-export const POWER_LABELS: Record<PowerAction, string> = {
-	shutdown: "Shutdown",
-	restart: "Restart",
-	sleep: "Sleep",
-	hibernate: "Hibernate",
-	logoff: "Log Off",
+	forceClose: false,
 };
 
 export const MIN_SECONDS = 3;
-export const MAX_SECONDS = 60;
+export const MAX_SECONDS = 60 * 60 * 60; // slider max: 60 h
 
 export function clampSeconds(seconds: number): number {
 	const safe = Number.isFinite(seconds) ? seconds : DEFAULTS.countdownSeconds;
 	return Math.min(MAX_SECONDS, Math.max(MIN_SECONDS, Math.round(safe)));
+}
+
+/** Slider value × unit, clamped. The value default matches the PI slider's `default="10"`. */
+export function durationSeconds(value: unknown = 10, unit?: unknown): number {
+	const factor = unit === "h" ? 3600 : unit === "m" ? 60 : 1;
+	return clampSeconds(Number(value) * factor);
 }
 
 export function normalizeColor(color: string): string {
@@ -41,6 +53,5 @@ export function normalizeColor(color: string): string {
 }
 
 export function normalizePowerAction(action?: string): PowerAction {
-	const valid: PowerAction[] = ["shutdown", "restart", "sleep", "hibernate", "logoff"];
-	return valid.includes(action as PowerAction) ? (action as PowerAction) : DEFAULTS.powerAction;
+	return POWER_ACTIONS.includes(action as PowerAction) ? (action as PowerAction) : DEFAULTS.powerAction;
 }

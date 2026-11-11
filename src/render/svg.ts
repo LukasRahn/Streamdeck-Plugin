@@ -40,8 +40,18 @@ function centeredText(value: string, l: Layout, color: string, widthShare: numbe
 	return text(value, l.widthPx / 2, l.heightPx / 2, size, color);
 }
 
+/** 45 → "45", 754 → "12:34", 5025 → "1:23:45". */
+export function formatClock(seconds: number): string {
+	const h = Math.floor(seconds / 3600);
+	const m = Math.floor((seconds % 3600) / 60);
+	const s = seconds % 60;
+	const pad = (v: number) => String(v).padStart(2, "0");
+	if (h > 0) return `${h}:${pad(m)}:${pad(s)}`;
+	return m > 0 ? `${m}:${pad(s)}` : String(s);
+}
+
 export function countdownView(seconds: number, color: string, sub?: string, subColor = WHITE_DIM): View {
-	return (l) => centeredText(String(seconds), l, color, 0.84, 0.66) + subtitle(sub, l, subColor);
+	return (l) => centeredText(formatClock(seconds), l, color, 0.84, 0.66) + subtitle(sub, l, subColor);
 }
 
 export function messageView(message: string, color: string): View {
@@ -54,19 +64,19 @@ export function idleView(action: PowerAction, seconds: number, color: string, su
 		const size = Math.min(l.widthPx, l.heightPx) * 0.42;
 		return (
 			powerGlyph(action, l.widthPx / 2, l.heightPx * 0.4, size, color) +
-			text(`${seconds}s`, l.widthPx / 2, l.heightPx * 0.72, Math.min(l.widthPx, l.heightPx) * 0.14, color) +
+			text(seconds < 60 ? `${seconds}s` : formatClock(seconds), l.widthPx / 2, l.heightPx * 0.72, Math.min(l.widthPx, l.heightPx) * 0.14, color) +
 			subtitle(sub, l, color)
 		);
 	};
 }
 
 /** Hold-to-arm feedback: a bar that fills while held, inset because key edges are hidden on the device. */
-export function holdView(progress: number, targetArmed: boolean, color: string): View {
+export function holdView(progress: number, label: string, sub: string, color: string): View {
 	const p = Math.max(0, Math.min(1, progress));
 	const inset = TS * 0.14;
 	return (l) =>
-		centeredText("HOLD", l, color, 0.8, 0.38) +
-		subtitle(targetArmed ? "ARMING" : "DISARMING", l, color) +
+		centeredText(label, l, color, 0.8, 0.38) +
+		subtitle(sub, l, color) +
 		`<rect x="${n(inset)}" y="${l.heightPx - TS * 0.26}" width="${n((l.widthPx - inset * 2) * p)}" height="8" rx="4" fill="${color}"/>`;
 }
 
@@ -90,6 +100,16 @@ function powerGlyph(action: PowerAction, cx: number, cy: number, size: number, c
 			return wrap(
 				`<path d="M 0.06 -0.4 H -0.36 V 0.4 H 0.06"/><line x1="-0.12" y1="0" x2="0.42" y2="0"/>` +
 					`<path d="M 0.26 -0.14 L 0.44 0 L 0.26 0.14"/>`,
+			);
+		case "lock":
+			return wrap(
+				`<rect x="-0.32" y="-0.06" width="0.64" height="0.5" rx="0.08"/>` +
+					`<path d="M -0.19 -0.06 V -0.2 A 0.19 0.19 0 0 1 0.19 -0.2 V -0.06"/><line x1="0" y1="0.12" x2="0" y2="0.26"/>`,
+			);
+		case "monitor":
+			return wrap(
+				`<rect x="-0.44" y="-0.38" width="0.88" height="0.58" rx="0.06"/>` +
+					`<path d="M 0 0.2 V 0.36 M -0.2 0.4 H 0.2"/><line x1="-0.3" y1="0.1" x2="0.3" y2="-0.28"/>`,
 			);
 	}
 }

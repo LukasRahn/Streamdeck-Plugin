@@ -1,20 +1,20 @@
 {
 	"Name": "ShutDown",
-	"Version": "0.2.0.0",
+	"Version": "0.3.0.0",
 	"Author": "Lukas",
 	"Actions": [
 		{
 			"Name": "Shutdown Master",
 			"UUID": "com.lukas.shutdown.master",
-			"Icon": "imgs/actions/counter/icon",
-			"Tooltip": "Master: configure settings and start the countdown.",
+			"Icon": "imgs/actions/master/icon",
+			"Tooltip": "Configure the countdown and start it. Hold to switch between Preview and Armed.",
 			"Controllers": [
 				"Keypad"
 			],
 			"PropertyInspectorPath": "ui/shutdown-countdown.html",
 			"States": [
 				{
-					"Image": "imgs/actions/counter/key",
+					"Image": "imgs/actions/master/key",
 					"TitleAlignment": "middle"
 				}
 			]
@@ -22,14 +22,14 @@
 		{
 			"Name": "Shutdown Child",
 			"UUID": "com.lukas.shutdown.child",
-			"Icon": "imgs/actions/counter/icon",
-			"Tooltip": "Child: mirrors master settings on the same page.",
+			"Icon": "imgs/actions/child/icon",
+			"Tooltip": "Extends the master's countdown across more keys.",
 			"Controllers": [
 				"Keypad"
 			],
 			"States": [
 				{
-					"Image": "imgs/actions/counter/key",
+					"Image": "imgs/actions/child/key",
 					"TitleAlignment": "middle"
 				}
 			]
@@ -38,7 +38,7 @@
 	"Category": "ShutDown",
 	"CategoryIcon": "imgs/plugin/category-icon",
 	"CodePath": "bin/plugin.js",
-	"Description": "Multi-key countdown with shutdown, restart, sleep, hibernate, or log-off.",
+	"Description": "Multi-key countdown that shuts down, restarts, sleeps, hibernates, logs off, locks the screen or turns off the display.",
 	"Icon": "imgs/plugin/marketplace",
 	"SDKVersion": 3,
 	"Software": {

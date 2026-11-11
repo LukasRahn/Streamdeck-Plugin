@@ -4,32 +4,99 @@
 	<meta charset="utf-8" />
 	<title>Shutdown Settings</title>
 	<script src="sdpi-components.js"></script>
+	<script>
+		// Must run before <body> is parsed: labels are translated when the elements are created.
+		SDPIComponents.i18n.locales = {
+			en: {
+				countdown: "Countdown",
+				unit: "Unit",
+				seconds: "Seconds",
+				minutes: "Minutes",
+				hours: "Hours",
+				action: "Action",
+				shutdown: "Shut down",
+				restart: "Restart",
+				sleep: "Sleep",
+				hibernate: "Hibernate",
+				logoff: "Log off",
+				lock: "Lock screen",
+				monitor: "Turn off display (PC keeps running)",
+				color: "Accent color",
+				force: "Force",
+				forceLabel: "Close apps without asking (Windows)",
+				tips: "Tips",
+				tipHold: "Hold the Master key for 0.8 s to switch between PREVIEW (animation only) and ARMED (the action really runs).",
+				tipChildren: "Place Child keys next to the Master: the countdown spans all of them. These settings apply to every key.",
+				tipForce: "Force: unsaved work in open apps is lost.",
+			},
+			de: {
+				countdown: "Countdown",
+				unit: "Einheit",
+				seconds: "Sekunden",
+				minutes: "Minuten",
+				hours: "Stunden",
+				action: "Aktion",
+				shutdown: "Herunterfahren",
+				restart: "Neu starten",
+				sleep: "Energie sparen",
+				hibernate: "Ruhezustand",
+				logoff: "Abmelden",
+				lock: "Bildschirm sperren",
+				monitor: "Monitor ausschalten (PC läuft weiter)",
+				color: "Akzentfarbe",
+				force: "Erzwingen",
+				forceLabel: "Apps ohne Nachfrage schließen (Windows)",
+				tips: "Tipps",
+				tipHold: "Master-Taste 0,8 s halten wechselt zwischen VORSCHAU (nur Animation) und SCHARF (die Aktion wird wirklich ausgeführt).",
+				tipChildren: "Child-Tasten neben den Master legen: Der Countdown läuft über alle. Diese Einstellungen gelten für jede Taste.",
+				tipForce: "Erzwingen: Ungespeicherte Arbeit in offenen Apps geht verloren.",
+			},
+		};
+	</script>
+	<style>
+		.tips { color: #8a8a8a; font-size: 12px; padding: 4px 10px; }
+		summary { color: #9b9b9b; cursor: pointer; margin: 8px 10px; }
+	</style>
 </head>
 <body>
-	<sdpi-item label="Countdown (sec)">
-		<sdpi-range setting="countdownSeconds" min="3" max="60" step="1" default="10" showlabels></sdpi-range>
+	<!-- All settings are global: the plugin shares them across every Master and Child key. -->
+	<sdpi-item label="__MSG_countdown__">
+		<sdpi-range setting="countdownValue" global min="1" max="60" step="1" default="10" showlabels></sdpi-range>
 	</sdpi-item>
-
-	<sdpi-item label="Power Action">
-		<sdpi-select setting="powerAction" default="shutdown">
-			<option value="shutdown">Shutdown</option>
-			<option value="restart">Restart</option>
-			<option value="sleep">Sleep</option>
-			<option value="hibernate">Hibernate</option>
-			<option value="logoff">Log Off</option>
+	<sdpi-item label="__MSG_unit__">
+		<sdpi-select setting="countdownUnit" global default="s">
+			<option value="s">__MSG_seconds__</option>
+			<option value="m">__MSG_minutes__</option>
+			<option value="h">__MSG_hours__</option>
 		</sdpi-select>
 	</sdpi-item>
 
-	<sdpi-item label="Accent Color">
-		<sdpi-color setting="accentColor" default="#00d37f"></sdpi-color>
+	<sdpi-item label="__MSG_action__">
+		<sdpi-select setting="powerAction" global default="shutdown">
+			<option value="shutdown">__MSG_shutdown__</option>
+			<option value="restart">__MSG_restart__</option>
+			<option value="sleep">__MSG_sleep__</option>
+			<option value="hibernate">__MSG_hibernate__</option>
+			<option value="logoff">__MSG_logoff__</option>
+			<option value="lock">__MSG_lock__</option>
+			<option value="monitor">__MSG_monitor__</option>
+		</sdpi-select>
+	</sdpi-item>
+
+	<sdpi-item label="__MSG_force__">
+		<sdpi-checkbox setting="forceClose" global label="__MSG_forceLabel__"></sdpi-checkbox>
+	</sdpi-item>
+
+	<sdpi-item label="__MSG_color__">
+		<sdpi-color setting="accentColor" global default="#00d37f"></sdpi-color>
 	</sdpi-item>
 
 	<details>
-		<summary style="color:#9b9b9b;cursor:pointer;margin:8px 10px;">Tips</summary>
-		<div style="padding:4px 10px;color:#7a7a7a;font-size:12px;">
-			<p><strong>Long-press</strong> the Master key to toggle <em>Armed / Preview</em> mode.</p>
-			<p>When <span style="color:#ff3b30;font-weight:bold;">ARMED</span>, the countdown will execute the power action. In <span style="color:#3fa3ff;">PREVIEW</span> mode it only shows the animation.</p>
-			<p>Place <em>Child</em> keys next to the Master and the countdown spans all of them.</p>
+		<summary><sdpi-i18n key="tips"></sdpi-i18n></summary>
+		<div class="tips">
+			<p><sdpi-i18n key="tipHold"></sdpi-i18n></p>
+			<p><sdpi-i18n key="tipChildren"></sdpi-i18n></p>
+			<p><sdpi-i18n key="tipForce"></sdpi-i18n></p>
 		</div>
 	</details>
 </body>
